@@ -1,0 +1,1252 @@
+
+
+-- 1. Q: Show all employees in the IT & System department
+SELECT employee_id, employee_name, role, hire_date
+FROM dim_employee
+WHERE department = 'IT & System';
+
+-- 2. Q: Find all expense categories that contain the word 'Vehicle'
+SELECT category_id, category_name, sub_category_name
+FROM dim_category
+WHERE category_name LIKE '%Vehicle%';
+
+-- 3. Q: List all expenses made in January 2024
+SELECT expense_id, employee_id, amount, payment_method, date_id
+FROM fact_expenses
+WHERE date_id BETWEEN '2024-01-01' AND '2024-01-31';
+
+-- 4. Q: Show employees hired after 2020
+SELECT employee_name, department, role, hire_date
+FROM dim_employee
+WHERE hire_date > '2020-12-31'
+ORDER BY hire_date DESC;
+
+-- 5. Q: Find all expenses greater than ₹50,000
+SELECT expense_id, employee_id, category_id, amount, date_id
+FROM fact_expenses
+WHERE amount > 50000
+ORDER BY amount DESC;
+
+-- 6. Q: Count total number of employees in each department
+SELECT department, COUNT(*) as employee_count
+FROM dim_employee
+GROUP BY department;
+
+-- 7. Q: Show all payment methods used and count of transactions
+SELECT payment_method, COUNT(*) as transaction_count
+FROM fact_expenses
+GROUP BY payment_method
+ORDER BY transaction_count DESC;
+
+-- 8. Q: Find the minimum and maximum expense amounts
+SELECT 
+    MIN(amount) as minimum_expense,
+    MAX(amount) as maximum_expense
+FROM fact_expenses;
+
+-- 9. Q: List all employees whose names start with 'A'
+SELECT employee_id, employee_name, department, role
+FROM dim_employee
+WHERE employee_name LIKE 'A%'
+ORDER BY employee_name;
+
+-- 10. Q: Show all expenses made using Credit Card
+SELECT expense_id, employee_id, amount, date_id
+FROM fact_expenses
+WHERE payment_method = 'Credit Card'
+LIMIT 10;
+
+-- 11. Q: Find total amount spent by each payment method
+SELECT payment_method, SUM(amount) as total_amount
+FROM fact_expenses
+GROUP BY payment_method
+ORDER BY total_amount DESC;
+
+-- 12. Q: Show all categories with their sub-categories
+SELECT category_name, sub_category_name
+FROM dim_category
+ORDER BY category_name, sub_category_name;
+
+-- 13. Q: Count how many expenses were made in 2023
+SELECT COUNT(*) as expenses_2023
+FROM fact_expenses fe
+JOIN dim_date dd ON fe.date_id = dd.date_id
+WHERE dd.year = 2023;
+
+-- 14. Q: Find employees in Finance department
+SELECT employee_name, role, hire_date
+FROM dim_employee
+WHERE department = 'Finance'
+ORDER BY hire_date;
+
+-- 15. Q: Show all expenses between ₹1,000 and ₹5,000
+SELECT expense_id, employee_id, amount, payment_method
+FROM fact_expenses
+WHERE amount BETWEEN 1000 AND 5000
+ORDER BY amount;
+
+-- 16. Q: List unique departments
+SELECT DISTINCT department
+FROM dim_employee
+ORDER BY department;
+
+-- 17. Q: Find total number of expense records
+SELECT COUNT(*) as total_expenses
+FROM fact_expenses;
+
+-- 18. Q: Show employees hired in 2023
+SELECT employee_name, department, role, hire_date
+FROM dim_employee
+WHERE YEAR(hire_date) = 2023;
+
+-- 19. Q: Find average expense amount
+SELECT ROUND(AVG(amount), 2) as average_expense
+FROM fact_expenses;
+
+-- 20. Q: Show all expenses made in Cash
+SELECT expense_id, employee_id, category_id, amount, date_id
+FROM fact_expenses
+WHERE payment_method = 'Cash'
+ORDER BY amount DESC;
+
+
+-- =====================================================
+-- 20 MEDIUM SQL QUERIES - CAMPERVAN BUSINESS DATABASE
+-- =====================================================
+
+-- 1. Q: Show employee names with their total spending and department
+SELECT 
+    de.employee_name,
+    de.department,
+    de.role,
+    SUM(fe.amount) as total_spending
+FROM dim_employee de
+JOIN fact_expenses fe ON de.employee_id = fe.employee_id
+GROUP BY de.employee_id, de.employee_name, de.department, de.role
+ORDER BY total_spending DESC;
+
+-- 2. Q: Find monthly total expenses for 2024
+SELECT 
+    dd.month,
+    dd.month_name,
+    SUM(fe.amount) as monthly_total,
+    COUNT(fe.expense_id) as transaction_count
+FROM fact_expenses fe
+JOIN dim_date dd ON fe.date_id = dd.date_id
+WHERE dd.year = 2024
+GROUP BY dd.month, dd.month_name
+ORDER BY dd.month;
+
+-- 3. Q: Show top 5 expense categories by total amount
+SELECT 
+    dc.category_name,
+    dc.sub_category_name,
+    SUM(fe.amount) as category_total
+FROM dim_category dc
+JOIN fact_expenses fe ON dc.category_id = fe.category_id
+GROUP BY dc.category_id, dc.category_name, dc.sub_category_name
+ORDER BY category_total DESC
+LIMIT 5;
+
+-- 4. Q: Find employees who have made expenses in multiple categories
+SELECT 
+    de.employee_name,
+    de.department,
+    COUNT(DISTINCT fe.category_id) as categories_used,
+    SUM(fe.amount) as total_amount
+FROM dim_employee de
+JOIN fact_expenses fe ON de.employee_id = fe.employee_id
+GROUP BY de.employee_id, de.employee_name, de.department
+HAVING COUNT(DISTINCT fe.category_id) > 3
+ORDER BY categories_used DESC;
+
+-- 5. Q: Calculate average expense per employee by department
+SELECT 
+    de.department,
+    COUNT(DISTINCT de.employee_id) as employee_count,
+    SUM(fe.amount) as dept_total,
+    ROUND(SUM(fe.amount) / COUNT(DISTINCT de.employee_id), 2) as avg_per_employee
+FROM dim_employee de
+JOIN fact_expenses fe ON de.employee_id = fe.employee_id
+GROUP BY de.department
+ORDER BY avg_per_employee DESC;
+
+-- 6. Q: Show quarterly expenses for each year
+SELECT 
+    dd.year,
+    dd.quarter,
+    SUM(fe.amount) as quarterly_total,
+    COUNT(fe.expense_id) as transaction_count
+FROM fact_expenses fe
+JOIN dim_date dd ON fe.date_id = dd.date_id
+GROUP BY dd.year, dd.quarter
+ORDER BY dd.year, dd.quarter;
+
+-- 7. Q: Find categories with expenses only in Bank Transfer
+SELECT 
+    dc.category_name,
+    dc.sub_category_name,
+    SUM(fe.amount) as total_amount
+FROM dim_category dc
+JOIN fact_expenses fe ON dc.category_id = fe.category_id
+WHERE fe.payment_method = 'Bank Transfer'
+GROUP BY dc.category_id, dc.category_name, dc.sub_category_name
+HAVING COUNT(*) = (
+    SELECT COUNT(*)
+    FROM fact_expenses fe2
+    WHERE fe2.category_id = dc.category_id
+);
+
+-- 8. Q: Show employee expenses by payment method
+SELECT 
+    de.employee_name,
+    fe.payment_method,
+    COUNT(fe.expense_id) as transaction_count,
+    SUM(fe.amount) as total_amount
+FROM dim_employee de
+JOIN fact_expenses fe ON de.employee_id = fe.employee_id
+GROUP BY de.employee_id, de.employee_name, fe.payment_method
+ORDER BY de.employee_name, total_amount DESC;
+
+-- 9. Q: Find months with expenses above average monthly spending
+WITH monthly_totals AS (
+    SELECT 
+        dd.year,
+        dd.month,
+        dd.month_name,
+        SUM(fe.amount) as monthly_total
+    FROM fact_expenses fe
+    JOIN dim_date dd ON fe.date_id = dd.date_id
+    GROUP BY dd.year, dd.month, dd.month_name
+),
+avg_monthly AS (
+    SELECT AVG(monthly_total) as avg_monthly_spending
+    FROM monthly_totals
+)
+SELECT 
+    mt.year,
+    mt.month,
+    mt.month_name,
+    mt.monthly_total,
+    am.avg_monthly_spending
+FROM monthly_totals mt
+CROSS JOIN avg_monthly am
+WHERE mt.monthly_total > am.avg_monthly_spending
+ORDER BY mt.year, mt.month;
+
+-- 10. Q: Show department-wise expense distribution by category
+SELECT 
+    de.department,
+    dc.category_name,
+    COUNT(fe.expense_id) as transaction_count,
+    SUM(fe.amount) as category_total
+FROM dim_employee de
+JOIN fact_expenses fe ON de.employee_id = fe.employee_id
+JOIN dim_category dc ON fe.category_id = dc.category_id
+GROUP BY de.department, dc.category_name
+ORDER BY de.department, category_total DESC;
+
+-- 11. Q: Find employees with above-average individual transaction amounts
+SELECT 
+    de.employee_name,
+    de.department,
+    COUNT(fe.expense_id) as transaction_count,
+    ROUND(AVG(fe.amount), 2) as avg_transaction_amount
+FROM dim_employee de
+JOIN fact_expenses fe ON de.employee_id = fe.employee_id
+GROUP BY de.employee_id, de.employee_name, de.department
+HAVING AVG(fe.amount) > (SELECT AVG(amount) FROM fact_expenses)
+ORDER BY avg_transaction_amount DESC;
+
+-- 12. Q: Show year-over-year growth by category
+SELECT 
+    dc.category_name,
+    SUM(CASE WHEN dd.year = 2023 THEN fe.amount ELSE 0 END) as amount_2023,
+    SUM(CASE WHEN dd.year = 2024 THEN fe.amount ELSE 0 END) as amount_2024,
+    SUM(CASE WHEN dd.year = 2024 THEN fe.amount ELSE 0 END) - 
+    SUM(CASE WHEN dd.year = 2023 THEN fe.amount ELSE 0 END) as growth_amount
+FROM dim_category dc
+JOIN fact_expenses fe ON dc.category_id = fe.category_id
+JOIN dim_date dd ON fe.date_id = dd.date_id
+WHERE dd.year IN (2023, 2024)
+GROUP BY dc.category_name
+ORDER BY growth_amount DESC;
+
+-- 13. Q: Find the most expensive transaction per month in 2024
+SELECT 
+    dd.month,
+    dd.month_name,
+    de.employee_name,
+    dc.category_name,
+    MAX(fe.amount) as max_expense,
+    fe.date_id
+FROM fact_expenses fe
+JOIN dim_date dd ON fe.date_id = dd.date_id
+JOIN dim_employee de ON fe.employee_id = de.employee_id
+JOIN dim_category dc ON fe.category_id = dc.category_id
+WHERE dd.year = 2024
+GROUP BY dd.month, dd.month_name, de.employee_name, dc.category_name, fe.date_id
+HAVING fe.amount = MAX(fe.amount)
+ORDER BY dd.month;
+
+-- 14. Q: Show payment method preference by department
+SELECT 
+    de.department,
+    fe.payment_method,
+    COUNT(fe.expense_id) as usage_count,
+    ROUND(COUNT(fe.expense_id) * 100.0 / SUM(COUNT(fe.expense_id)) OVER (PARTITION BY de.department), 2) as percentage
+FROM dim_employee de
+JOIN fact_expenses fe ON de.employee_id = fe.employee_id
+GROUP BY de.department, fe.payment_method
+ORDER BY de.department, usage_count DESC;
+
+-- 15. Q: Find categories with seasonal spending patterns
+SELECT 
+    dc.category_name,
+    dd.quarter,
+    SUM(fe.amount) as quarterly_amount,
+    ROUND(AVG(fe.amount), 2) as avg_transaction
+FROM dim_category dc
+JOIN fact_expenses fe ON dc.category_id = fe.category_id
+JOIN dim_date dd ON fe.date_id = dd.date_id
+GROUP BY dc.category_name, dd.quarter
+ORDER BY dc.category_name, dd.quarter;
+
+-- 16. Q: Show employee tenure and their spending correlation
+SELECT 
+    de.employee_name,
+    de.department,
+    DATEDIFF('2025-08-07', de.hire_date) as days_employed,
+    COUNT(fe.expense_id) as transaction_count,
+    SUM(fe.amount) as total_spending
+FROM dim_employee de
+LEFT JOIN fact_expenses fe ON de.employee_id = fe.employee_id
+GROUP BY de.employee_id, de.employee_name, de.department, de.hire_date
+ORDER BY days_employed DESC;
+
+-- 17. Q: Find top spending employee per department
+SELECT 
+    de.department,
+    de.employee_name,
+    SUM(fe.amount) as total_spending
+FROM dim_employee de
+JOIN fact_expenses fe ON de.employee_id = fe.employee_id
+WHERE (de.department, fe.amount) IN (
+    SELECT 
+        de2.department,
+        MAX(fe2.amount)
+    FROM dim_employee de2
+    JOIN fact_expenses fe2 ON de2.employee_id = fe2.employee_id
+    GROUP BY de2.department
+)
+GROUP BY de.department, de.employee_name
+ORDER BY total_spending DESC;
+
+-- 18. Q: Calculate running total of expenses by date
+SELECT 
+    fe.date_id,
+    fe.amount,
+    SUM(fe.amount) OVER (ORDER BY fe.date_id) as running_total
+FROM fact_expenses fe
+ORDER BY fe.date_id
+LIMIT 20;
+
+-- 19. Q: Show categories that have both high-value and low-value transactions
+SELECT 
+    dc.category_name,
+    MIN(fe.amount) as min_amount,
+    MAX(fe.amount) as max_amount,
+    MAX(fe.amount) - MIN(fe.amount) as amount_range,
+    COUNT(fe.expense_id) as transaction_count
+FROM dim_category dc
+JOIN fact_expenses fe ON dc.category_id = fe.category_id
+GROUP BY dc.category_name
+HAVING MAX(fe.amount) - MIN(fe.amount) > 50000
+ORDER BY amount_range DESC;
+
+-- 20. Q: Find expense patterns by day of week (if date functions available)
+SELECT 
+    DAYNAME(dd.date_id) as day_of_week,
+    COUNT(fe.expense_id) as transaction_count,
+    SUM(fe.amount) as daily_total,
+    ROUND(AVG(fe.amount), 2) as avg_amount
+FROM fact_expenses fe
+JOIN dim_date dd ON fe.date_id = dd.date_id
+GROUP BY DAYNAME(dd.date_id)
+ORDER BY daily_total DESC;
+
+-- =====================================================
+-- 20 ADVANCED SQL QUERIES - CAMPERVAN BUSINESS DATABASE
+-- =====================================================
+
+-- 1. Q: Calculate expense trend analysis with moving averages
+WITH monthly_expenses AS (
+    SELECT 
+        dd.year,
+        dd.month,
+        dd.month_name,
+        SUM(fe.amount) as monthly_total
+    FROM fact_expenses fe
+    JOIN dim_date dd ON fe.date_id = dd.date_id
+    GROUP BY dd.year, dd.month, dd.month_name
+)
+SELECT 
+    year,
+    month,
+    month_name,
+    monthly_total,
+    AVG(monthly_total) OVER (ORDER BY year, month ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) as three_month_avg,
+    LAG(monthly_total, 1) OVER (ORDER BY year, month) as prev_month_total,
+    ROUND(((monthly_total - LAG(monthly_total, 1) OVER (ORDER BY year, month)) * 100.0 / 
+           LAG(monthly_total, 1) OVER (ORDER BY year, month)), 2) as month_over_month_growth
+FROM monthly_expenses
+ORDER BY year, month;
+
+-- 2. Q: Employee performance ranking with percentile analysis
+WITH employee_stats AS (
+    SELECT 
+        de.employee_id,
+        de.employee_name,
+        de.department,
+        de.role,
+        COUNT(fe.expense_id) as transaction_count,
+        SUM(fe.amount) as total_spending,
+        AVG(fe.amount) as avg_transaction,
+        DATEDIFF('2025-08-07', de.hire_date) as tenure_days
+    FROM dim_employee de
+    LEFT JOIN fact_expenses fe ON de.employee_id = fe.employee_id
+    GROUP BY de.employee_id, de.employee_name, de.department, de.role, de.hire_date
+)
+SELECT 
+    employee_name,
+    department,
+    role,
+    transaction_count,
+    total_spending,
+    ROUND(avg_transaction, 2) as avg_transaction,
+    tenure_days,
+    RANK() OVER (ORDER BY total_spending DESC) as spending_rank,
+    PERCENT_RANK() OVER (ORDER BY total_spending) as spending_percentile,
+    NTILE(4) OVER (ORDER BY total_spending) as spending_quartile,
+    CASE 
+        WHEN total_spending > (SELECT AVG(total_spending) FROM employee_stats) THEN 'Above Average'
+        ELSE 'Below Average'
+    END as performance_category
+FROM employee_stats
+ORDER BY total_spending DESC;
+
+-- 3. Q: Complex budget variance analysis with forecasting
+WITH budget_analysis AS (
+    SELECT 
+        dc.category_name,
+        dd.year,
+        dd.month,
+        SUM(fe.amount) as actual_spending,
+        CASE 
+            WHEN dc.category_name = 'Vehicle Purchase' THEN 45000
+            WHEN dc.category_name = 'Vehicle Conversion' THEN 8000
+            WHEN dc.category_name = 'Vehicle Maintenance' THEN 2500
+            WHEN dc.category_name = 'Insurance' THEN 2000
+            ELSE 1500
+        END as monthly_budget
+    FROM fact_expenses fe
+    JOIN dim_date dd ON fe.date_id = dd.date_id
+    JOIN dim_category dc ON fe.category_id = dc.category_id
+    WHERE dd.year >= 2024
+    GROUP BY dc.category_name, dd.year, dd.month
+),
+variance_calc AS (
+    SELECT 
+        category_name,
+        year,
+        month,
+        actual_spending,
+        monthly_budget,
+        actual_spending - monthly_budget as variance,
+        ROUND(((actual_spending - monthly_budget) * 100.0 / monthly_budget), 2) as variance_percentage,
+        SUM(actual_spending - monthly_budget) OVER (
+            PARTITION BY category_name, year 
+            ORDER BY month 
+            ROWS UNBOUNDED PRECEDING
+        ) as cumulative_variance
+    FROM budget_analysis
+)
+SELECT 
+    category_name,
+    year,
+    month,
+    actual_spending,
+    monthly_budget,
+    variance,
+    variance_percentage,
+    cumulative_variance,
+    CASE 
+        WHEN variance_percentage > 20 THEN 'Significantly Over Budget'
+        WHEN variance_percentage > 10 THEN 'Over Budget'
+        WHEN variance_percentage BETWEEN -10 AND 10 THEN 'Within Budget'
+        WHEN variance_percentage < -10 THEN 'Under Budget'
+    END as budget_status
+FROM variance_calc
+ORDER BY category_name, year, month;
+
+-- 4. Q: Cohort analysis for employee spending behavior
+WITH employee_cohorts AS (
+    SELECT 
+        de.employee_id,
+        de.employee_name,
+        YEAR(de.hire_date) as hire_year,
+        MIN(dd.year) as first_expense_year
+    FROM dim_employee de
+    LEFT JOIN fact_expenses fe ON de.employee_id = fe.employee_id
+    LEFT JOIN dim_date dd ON fe.date_id = dd.date_id
+    GROUP BY de.employee_id, de.employee_name, de.hire_date
+),
+cohort_spending AS (
+    SELECT 
+        ec.hire_year,
+        dd.year as expense_year,
+        dd.year - ec.hire_year as years_since_hire,
+        COUNT(DISTINCT ec.employee_id) as active_employees,
+        COUNT(fe.expense_id) as total_transactions,
+        SUM(fe.amount) as total_spending,
+        AVG(fe.amount) as avg_transaction_amount
+    FROM employee_cohorts ec
+    LEFT JOIN fact_expenses fe ON ec.employee_id = fe.employee_id
+    LEFT JOIN dim_date dd ON fe.date_id = dd.date_id
+    GROUP BY ec.hire_year, dd.year
+)
+SELECT 
+    hire_year,
+    expense_year,
+    years_since_hire,
+    active_employees,
+    total_transactions,
+    total_spending,
+    ROUND(avg_transaction_amount, 2) as avg_transaction_amount,
+    ROUND(total_spending / NULLIF(active_employees, 0), 2) as spending_per_employee
+FROM cohort_spending
+WHERE expense_year IS NOT NULL
+ORDER BY hire_year, expense_year;
+
+-- 5. Q: Advanced seasonal decomposition and anomaly detection
+WITH daily_expenses AS (
+    SELECT 
+        dd.date_id,
+        dd.year,
+        dd.month,
+        dd.day,
+        DAYOFWEEK(dd.date_id) as day_of_week,
+        SUM(fe.amount) as daily_total
+    FROM fact_expenses fe
+    JOIN dim_date dd ON fe.date_id = dd.date_id
+    GROUP BY dd.date_id, dd.year, dd.month, dd.day
+),
+seasonal_stats AS (
+    SELECT 
+        month,
+        day_of_week,
+        AVG(daily_total) as avg_amount,
+        STDDEV(daily_total) as stddev_amount
+    FROM daily_expenses
+    GROUP BY month, day_of_week
+),
+anomaly_detection AS (
+    SELECT 
+        de.date_id,
+        de.year,
+        de.month,
+        de.day,
+        de.daily_total,
+        ss.avg_amount,
+        ss.stddev_amount,
+        ABS(de.daily_total - ss.avg_amount) as deviation,
+        CASE 
+            WHEN ABS(de.daily_total - ss.avg_amount) > (2 * ss.stddev_amount) THEN 'Anomaly'
+            WHEN ABS(de.daily_total - ss.avg_amount) > (1.5 * ss.stddev_amount) THEN 'Unusual'
+            ELSE 'Normal'
+        END as anomaly_flag
+    FROM daily_expenses de
+    JOIN seasonal_stats ss ON de.month = ss.month AND de.day_of_week = ss.day_of_week
+)
+SELECT 
+    date_id,
+    year,
+    month,
+    day,
+    daily_total,
+    ROUND(avg_amount, 2) as expected_amount,
+    ROUND(deviation, 2) as deviation,
+    anomaly_flag
+FROM anomaly_detection
+WHERE anomaly_flag IN ('Anomaly', 'Unusual')
+ORDER BY deviation DESC
+LIMIT 20;
+
+-- 6. Q: Complex cross-departmental spending correlation analysis
+WITH dept_monthly_spending AS (
+    SELECT 
+        de.department,
+        dd.year,
+        dd.month,
+        SUM(fe.amount) as monthly_spending
+    FROM dim_employee de
+    JOIN fact_expenses fe ON de.employee_id = fe.employee_id
+    JOIN dim_date dd ON fe.date_id = dd.date_id
+    GROUP BY de.department, dd.year, dd.month
+),
+spending_pivot AS (
+    SELECT 
+        year,
+        month,
+        SUM(CASE WHEN department = 'OPERATIONS' THEN monthly_spending ELSE 0 END) as operations_spending,
+        SUM(CASE WHEN department = 'Finance' THEN monthly_spending ELSE 0 END) as finance_spending,
+        SUM(CASE WHEN department = 'Sale & Marketing' THEN monthly_spending ELSE 0 END) as marketing_spending,
+        SUM(CASE WHEN department = 'HR' THEN monthly_spending ELSE 0 END) as hr_spending,
+        SUM(CASE WHEN department = 'IT & System' THEN monthly_spending ELSE 0 END) as it_spending
+    FROM dept_monthly_spending
+    GROUP BY year, month
+)
+SELECT 
+    year,
+    month,
+    operations_spending,
+    finance_spending,
+    marketing_spending,
+    hr_spending,
+    it_spending,
+    operations_spending + finance_spending + marketing_spending + hr_spending + it_spending as total_monthly,
+    ROUND((operations_spending * 100.0) / (operations_spending + finance_spending + marketing_spending + hr_spending + it_spending), 2) as operations_pct,
+    ROUND((finance_spending * 100.0) / (operations_spending + finance_spending + marketing_spending + hr_spending + it_spending), 2) as finance_pct,
+    ROUND((marketing_spending * 100.0) / (operations_spending + finance_spending + marketing_spending + hr_spending + it_spending), 2) as marketing_pct
+FROM spending_pivot
+ORDER BY year, month;
+
+-- 7. Q: Advanced employee productivity scoring with multiple dimensions
+WITH employee_metrics AS (
+    SELECT 
+        de.employee_id,
+        de.employee_name,
+        de.department,
+        de.role,
+        COUNT(DISTINCT fe.category_id) as categories_used,
+        COUNT(fe.expense_id) as transaction_count,
+        SUM(fe.amount) as total_spending,
+        AVG(fe.amount) as avg_transaction,
+        MAX(fe.amount) as max_transaction,
+        STDDEV(fe.amount) as spending_consistency,
+        COUNT(DISTINCT DATE(fe.date_id)) as active_days,
+        DATEDIFF('2025-08-07', de.hire_date) as tenure_days
+    FROM dim_employee de
+    LEFT JOIN fact_expenses fe ON de.employee_id = fe.employee_id
+    GROUP BY de.employee_id, de.employee_name, de.department, de.role, de.hire_date
+),
+scoring AS (
+    SELECT 
+        *,
+        -- Normalize scores to 0-100 scale
+        ROUND((categories_used * 100.0) / (SELECT MAX(categories_used) FROM employee_metrics), 2) as category_diversity_score,
+        ROUND((transaction_count * 100.0) / (SELECT MAX(transaction_count) FROM employee_metrics), 2) as activity_score,
+        ROUND((total_spending * 100.0) / (SELECT MAX(total_spending) FROM employee_metrics), 2) as spending_volume_score,
+        ROUND(100 - ((spending_consistency * 100.0) / (SELECT MAX(spending_consistency) FROM employee_metrics WHERE spending_consistency IS NOT NULL)), 2) as consistency_score
+    FROM employee_metrics
+)
+SELECT 
+    employee_name,
+    department,
+    role,
+    categories_used,
+    transaction_count,
+    total_spending,
+    category_diversity_score,
+    activity_score,
+    spending_volume_score,
+    COALESCE(consistency_score, 50) as consistency_score,
+    ROUND((category_diversity_score + activity_score + spending_volume_score + COALESCE(consistency_score, 50)) / 4, 2) as overall_productivity_score,
+    RANK() OVER (ORDER BY (category_diversity_score + activity_score + spending_volume_score + COALESCE(consistency_score, 50)) DESC) as productivity_rank
+FROM scoring
+ORDER BY overall_productivity_score DESC;
+
+
+
+
+-- 8. Q: Dynamic expense forecasting using historical patterns
+WITH historical_trends AS (
+    SELECT 
+        dc.category_name,
+        dd.year,
+        dd.month,
+        SUM(fe.amount) as monthly_amount,
+        AVG(SUM(fe.amount)) OVER (
+            PARTITION BY dc.category_name 
+            ORDER BY dd.year, dd.month 
+            ROWS BETWEEN 5 PRECEDING AND 1 PRECEDING
+        ) as six_month_avg,
+        LAG(SUM(fe.amount), 12) OVER (
+            PARTITION BY dc.category_name 
+            ORDER BY dd.year, dd.month
+        ) as same_month_last_year
+    FROM fact_expenses fe
+    JOIN dim_date dd ON fe.date_id = dd.date_id
+    JOIN dim_category dc ON fe.category_id = dc.category_id
+    GROUP BY dc.category_name, dd.year, dd.month
+),
+growth_rates AS (
+    SELECT 
+        category_name,
+        year,
+        month,
+        monthly_amount,
+        six_month_avg,
+        same_month_last_year,
+        CASE 
+            WHEN same_month_last_year IS NOT NULL THEN
+                ROUND(((monthly_amount - same_month_last_year) * 100.0 / same_month_last_year), 2)
+            ELSE 0
+        END as yoy_growth_rate,
+        CASE 
+            WHEN six_month_avg IS NOT NULL THEN
+                ROUND(((monthly_amount - six_month_avg) * 100.0 / six_month_avg), 2)
+            ELSE 0
+        END as trend_deviation
+    FROM historical_trends
+)
+SELECT 
+    category_name,
+    year,
+    month,
+    monthly_amount,
+    ROUND(six_month_avg, 2) as six_month_average,
+    same_month_last_year,
+    yoy_growth_rate,
+    trend_deviation,
+    -- Simple forecast for next month
+    ROUND(
+        CASE 
+            WHEN six_month_avg IS NOT NULL AND same_month_last_year IS NOT NULL THEN
+                (six_month_avg * 0.6) + (same_month_last_year * (1 + yoy_growth_rate/100) * 0.4)
+            WHEN six_month_avg IS NOT NULL THEN six_month_avg
+            ELSE monthly_amount
+        END, 2
+    ) as forecasted_next_month,
+    CASE 
+        WHEN ABS(trend_deviation) > 30 THEN 'High Volatility'
+        WHEN ABS(trend_deviation) > 15 THEN 'Medium Volatility'
+        ELSE 'Stable'
+    END as volatility_flag
+FROM growth_rates
+WHERE year = 2025
+ORDER BY category_name, month;
+
+-- 9. Q: Complex expense optimization with cost center analysis
+WITH cost_center_analysis AS (
+    SELECT 
+        de.department,
+        dc.category_name,
+        dc.sub_category_name,
+        COUNT(fe.expense_id) as transaction_frequency,
+        SUM(fe.amount) as total_cost,
+        AVG(fe.amount) as avg_cost_per_transaction,
+        MIN(fe.amount) as min_cost,
+        MAX(fe.amount) as max_cost,
+        STDDEV(fe.amount) as cost_variability
+    FROM dim_employee de
+    JOIN fact_expenses fe ON de.employee_id = fe.employee_id
+    JOIN dim_category dc ON fe.category_id = dc.category_id
+    GROUP BY de.department, dc.category_name, dc.sub_category_name
+),
+optimization_metrics AS (
+    SELECT 
+        department,
+        category_name,
+        sub_category_name,
+        transaction_frequency,
+        total_cost,
+        avg_cost_per_transaction,
+        cost_variability,
+        -- Calculate efficiency metrics
+        total_cost / transaction_frequency as cost_per_transaction,
+        CASE 
+            WHEN cost_variability > avg_cost_per_transaction THEN 'High Variance'
+            WHEN cost_variability > (avg_cost_per_transaction * 0.5) THEN 'Medium Variance'
+            ELSE 'Low Variance'
+        END as cost_consistency,
+        -- Identify optimization opportunities
+        CASE 
+            WHEN total_cost > (SELECT AVG(total_cost) FROM cost_center_analysis) 
+                AND cost_variability > avg_cost_per_transaction THEN 'Cost Reduction Target'
+            WHEN transaction_frequency > (SELECT AVG(transaction_frequency) FROM cost_center_analysis)
+                AND avg_cost_per_transaction > (SELECT AVG(avg_cost_per_transaction) FROM cost_center_analysis) THEN 'Process Optimization'
+            WHEN cost_variability < (avg_cost_per_transaction * 0.2) THEN 'Well Managed'
+            ELSE 'Monitor'
+        END as optimization_priority
+    FROM cost_center_analysis
+)
+SELECT 
+    department,
+    category_name,
+    sub_category_name,
+    transaction_frequency,
+    ROUND(total_cost, 2) as total_cost,
+    ROUND(avg_cost_per_transaction, 2) as avg_cost_per_transaction,
+    ROUND(cost_variability, 2) as cost_variability,
+    cost_consistency,
+    optimization_priority,
+    -- Calculate potential savings
+    CASE 
+        WHEN optimization_priority = 'Cost Reduction Target' THEN 
+            ROUND(total_cost * 0.15, 2)  -- Assume 15% reduction possible
+        WHEN optimization_priority = 'Process Optimization' THEN 
+            ROUND(total_cost * 0.10, 2)  -- Assume 10% reduction possible
+        ELSE 0
+    END as potential_savings
+FROM optimization_metrics
+ORDER BY total_cost DESC, potential_savings DESC;
+
+-- 10. Q: Multi-dimensional expense clustering and pattern recognition
+WITH expense_features AS (
+    SELECT 
+        fe.expense_id,
+        fe.employee_id,
+        de.department,
+        de.role,
+        dc.category_name,
+        fe.amount,
+        fe.payment_method,
+        dd.year,
+        dd.month,
+        dd.quarter,
+        DAYOFWEEK(dd.date_id) as day_of_week,
+        -- Create feature vectors
+        CASE 
+            WHEN fe.amount < 1000 THEN 'Low'
+            WHEN fe.amount < 10000 THEN 'Medium'
+            WHEN fe.amount < 50000 THEN 'High'
+            ELSE 'Very High'
+        END as amount_category,
+        CASE 
+            WHEN dd.month IN (1,2,3) THEN 'Q1'
+            WHEN dd.month IN (4,5,6) THEN 'Q2'
+            WHEN dd.month IN (7,8,9) THEN 'Q3'
+            ELSE 'Q4'
+        END as season
+    FROM fact_expenses fe
+    JOIN dim_employee de ON fe.employee_id = de.employee_id
+    JOIN dim_category dc ON fe.category_id = dc.category_id
+    JOIN dim_date dd ON fe.date_id = dd.date_id
+),
+pattern_clusters AS (
+    SELECT 
+        department,
+        category_name,
+        amount_category,
+        season,
+        payment_method,
+        COUNT(*) as pattern_frequency,
+        AVG(amount) as avg_amount,
+        SUM(amount) as total_amount
+    FROM expense_features
+    GROUP BY department, category_name, amount_category, season, payment_method
+    HAVING COUNT(*) >= 5  -- Only patterns that occur at least 5 times
+),
+cluster_ranking AS (
+    SELECT 
+        *,
+        ROW_NUMBER() OVER (PARTITION BY department ORDER BY pattern_frequency DESC, total_amount DESC) as dept_pattern_rank,
+        ROUND((pattern_frequency * 100.0) / SUM(pattern_frequency) OVER (PARTITION BY department), 2) as pattern_percentage
+    FROM pattern_clusters
+)
+SELECT 
+    department,
+    category_name,
+    amount_category,
+    season,
+    payment_method,
+    pattern_frequency,
+    ROUND(avg_amount, 2) as avg_amount,
+    ROUND(total_amount, 2) as total_amount,
+    dept_pattern_rank,
+    pattern_percentage,
+    CASE 
+        WHEN dept_pattern_rank <= 3 AND pattern_percentage > 10 THEN 'Dominant Pattern'
+        WHEN pattern_frequency > 10 THEN 'Common Pattern'
+        WHEN total_amount > 50000 THEN 'High Value Pattern'
+        ELSE 'Emerging Pattern'
+    END as pattern_classification
+FROM cluster_ranking
+WHERE dept_pattern_rank <= 10  -- Top 10 patterns per department
+ORDER BY department, dept_pattern_rank;
+
+-- 11. Q: Advanced financial ratio analysis and benchmarking
+WITH financial_metrics AS (
+    SELECT 
+        dd.year,
+        dd.quarter,
+        -- Revenue proxies (assuming vehicle sales generate revenue)
+        SUM(CASE WHEN dc.category_name = 'Vehicle Purchase' THEN fe.amount ELSE 0 END) as vehicle_investment,
+        SUM(CASE WHEN dc.category_name IN ('Vehicle Conversion', 'Parts & Equipment') THEN fe.amount ELSE 0 END) as conversion_costs,
+        SUM(CASE WHEN dc.category_name IN ('Vehicle Maintenance', 'Insurance') THEN fe.amount ELSE 0 END) as operational_costs,
+        SUM(CASE WHEN dc.category_name IN ('Marketing', 'Professional Services') THEN fe.amount ELSE 0 END) as administrative_costs,
+        SUM(fe.amount) as total_expenses
+    FROM fact_expenses fe
+    JOIN dim_date dd ON fe.date_id = dd.date_id
+    JOIN dim_category dc ON fe.category_id = dc.category_id
+    GROUP BY dd.year, dd.quarter
+),
+ratio_analysis AS (
+    SELECT 
+        year,
+        quarter,
+        vehicle_investment,
+        conversion_costs,
+        operational_costs,
+        administrative_costs,
+        total_expenses,
+        -- Calculate key ratios
+        ROUND((conversion_costs * 100.0) / NULLIF(vehicle_investment, 0), 2) as conversion_to_investment_ratio,
+        ROUND((operational_costs * 100.0) / NULLIF(total_expenses, 0), 2) as operational_cost_ratio,
+        ROUND((administrative_costs * 100.0) / NULLIF(total_expenses, 0), 2) as admin_cost_ratio,
+        -- Period-over-period analysis
+        LAG(total_expenses) OVER (ORDER BY year, quarter) as prev_quarter_expenses,
+        LAG(vehicle_investment) OVER (ORDER BY year, quarter) as prev_quarter_investment
+    FROM financial_metrics
+),
+benchmark_analysis AS (
+    SELECT 
+        *,
+        ROUND(((total_expenses - prev_quarter_expenses) * 100.0) / NULLIF(prev_quarter_expenses, 0), 2) as expense_growth_rate,
+        ROUND(((vehicle_investment - prev_quarter_investment) * 100.0) / NULLIF(prev_quarter_investment, 0), 2) as investment_growth_rate,
+        -- Benchmark against averages
+        AVG(operational_cost_ratio) OVER () as avg_operational_ratio,
+        AVG(admin_cost_ratio) OVER () as avg_admin_ratio
+    FROM ratio_analysis
+)
+SELECT 
+    year,
+    quarter,
+    ROUND(vehicle_investment, 2) as vehicle_investment,
+    ROUND(conversion_costs, 2) as conversion_costs,
+    ROUND(operational_costs, 2) as operational_costs,
+    ROUND(administrative_costs, 2) as administrative_costs,
+    ROUND(total_expenses, 2) as total_expenses,
+    conversion_to_investment_ratio,
+    operational_cost_ratio,
+    admin_cost_ratio,
+    expense_growth_rate,
+    investment_growth_rate,
+    CASE 
+        WHEN operational_cost_ratio > (avg_operational_ratio * 1.2) THEN 'High Operational Costs'
+        WHEN operational_cost_ratio < (avg_operational_ratio * 0.8) THEN 'Efficient Operations'
+        ELSE 'Average Operations'
+    END as operational_efficiency,
+    CASE 
+        WHEN admin_cost_ratio > (avg_admin_ratio * 1.2) THEN 'High Admin Costs'
+        WHEN admin_cost_ratio < (avg_admin_ratio * 0.8) THEN 'Lean Administration'
+        ELSE 'Average Administration'
+    END as admin_efficiency
+FROM benchmark_analysis
+ORDER BY year, quarter;
+
+-- 12. Q: Complex supplier/vendor analysis through payment patterns
+WITH vendor_analysis AS (
+    SELECT 
+        dc.category_name,
+        dc.sub_category_name,
+        fe.payment_method,
+        COUNT(fe.expense_id) as transaction_count,
+        SUM(fe.amount) as total_paid,
+        AVG(fe.amount) as avg_payment,
+        STDDEV(fe.amount) as payment_variability,
+        MIN(fe.amount) as min_payment,
+        MAX(fe.amount) as max_payment,
+        -- Calculate payment frequency patterns
+        COUNT(DISTINCT DATE(fe.date_id)) as unique_payment_days,
+        DATEDIFF(MAX(fe.date_id), MIN(fe.date_id)) + 1 as span_days
+    FROM fact_expenses fe
+    JOIN dim_category dc ON fe.category_id = dc.category_id
+    GROUP BY dc.category_name, dc.sub_category_name, fe.payment_method
+    HAVING COUNT(fe.expense_id) >= 3
+),
+payment_patterns AS (
+    SELECT 
+        *,
+        ROUND(span_days / NULLIF(unique_payment_days, 0), 2) as avg_days_between_payments,
+        ROUND((payment_variability * 100.0) / NULLIF(avg_payment, 0), 2) as payment_consistency_score,
+        CASE 
+            WHEN payment_method = 'Bank Transfer' AND avg_payment > 10000 THEN 'Large Vendor'
+            WHEN payment_method = 'Credit Card' AND transaction_count > 20 THEN 'Frequent Vendor'
+            WHEN payment_method = 'Cash' AND avg_payment < 1000 THEN 'Small Supplier'
+            ELSE 'Regular Vendor'
+        END as vendor_type
+    FROM vendor_analysis
+),
+risk_assessment AS (
+    SELECT 
+        *,
+        CASE 
+            WHEN payment_consistency_score > 100 THEN 'High Risk - Irregular Payments'
+            WHEN avg_days_between_payments > 60 THEN 'Medium Risk - Infrequent Payments'
+            WHEN total_paid > (SELECT AVG(total_paid) FROM payment_patterns) * 2 THEN 'High Value - Monitor Closely'
+            ELSE 'Low Risk'
+        END as risk_category,
+        -- Calculate concentration risk
+        ROUND((total_paid * 100.0) / (SELECT SUM(total_paid) FROM payment_patterns), 2) as spend_concentration
+    FROM payment_patterns
+)
+SELECT 
+    category_name,
+    sub_category_name,
+    payment_method,
+    vendor_type,
+    transaction_count,
+    ROUND(total_paid, 2) as total_paid,
+    ROUND(avg_payment, 2) as avg_payment,
+    ROUND(avg_days_between_payments, 2) as avg_days_between_payments,
+    ROUND(payment_consistency_score, 2) as consistency_score,
+    spend_concentration,
+    risk_category,
+    CASE 
+        WHEN spend_concentration > 10 THEN 'Critical Vendor - Diversification Needed'
+        WHEN spend_concentration > 5 THEN 'Important Vendor - Monitor'
+        ELSE 'Regular Vendor'
+    END as strategic_importance
+FROM risk_assessment
+ORDER BY total_paid DESC, spend_concentration DESC;
+
+-- 13. Q: Employee expense behavior segmentation with machine learning approach
+WITH employee_behavior_features AS (
+    SELECT 
+        de.employee_id,
+        de.employee_name,
+        de.department,
+        de.role,
+        COUNT(fe.expense_id) as total_transactions,
+        COUNT(DISTINCT fe.category_id) as category_diversity,
+        COUNT(DISTINCT fe.payment_method) as payment_method_diversity,
+        SUM(fe.amount) as total_spending,
+        AVG(fe.amount) as avg_transaction_size,
+        STDDEV(fe.amount) as spending_variability,
+        MAX(fe.amount) as max_transaction,
+        MIN(fe.amount) as min_transaction,
+        COUNT(DISTINCT DATE(fe.date_id)) as active_days,
+        -- Behavioral indicators
+        SUM(CASE WHEN fe.amount > 10000 THEN 1 ELSE 0 END) as high_value_transactions,
+        SUM(CASE WHEN fe.payment_method = 'Credit Card' THEN 1 ELSE 0 END) as credit_card_usage,
+        SUM(CASE WHEN fe.payment_method = 'Cash' THEN 1 ELSE 0 END) as cash_usage
+    FROM dim_employee de
+    LEFT JOIN fact_expenses fe ON de.employee_id = fe.employee_id
+    GROUP BY de.employee_id, de.employee_name, de.department, de.role
+    HAVING COUNT(fe.expense_id) > 0
+),
+normalized_features AS (
+    SELECT 
+        *,
+        -- Normalize features for clustering (0-1 scale)
+        ROUND((total_transactions - (SELECT MIN(total_transactions) FROM employee_behavior_features)) * 1.0 / 
+              NULLIF((SELECT MAX(total_transactions) - MIN(total_transactions) FROM employee_behavior_features), 0), 3) as norm_transactions,
+        ROUND((category_diversity - (SELECT MIN(category_diversity) FROM employee_behavior_features)) * 1.0 / 
+              NULLIF((SELECT MAX(category_diversity) - MIN(category_diversity) FROM employee_behavior_features), 0), 3) as norm_diversity,
+        ROUND((total_spending - (SELECT MIN(total_spending) FROM employee_behavior_features)) * 1.0 / 
+              NULLIF((SELECT MAX(total_spending) - MIN(total_spending) FROM employee_behavior_features), 0), 3) as norm_spending,
+        ROUND((avg_transaction_size - (SELECT MIN(avg_transaction_size) FROM employee_behavior_features)) * 1.0 / 
+              NULLIF((SELECT MAX(avg_transaction_size) - MIN(avg_transaction_size) FROM employee_behavior_features), 0), 3) as norm_avg_size
+    FROM employee_behavior_features
+),
+behavioral_segments AS (
+    SELECT 
+        *,
+        -- Create behavioral segments based on feature combinations
+        CASE 
+            WHEN norm_spending > 0.8 AND norm_diversity > 0.7 THEN 'High Volume Multi-Category'
+            WHEN norm_spending > 0.8 AND norm_avg_size > 0.8 THEN 'High Value Transactor'
+            WHEN norm_transactions > 0.8 AND norm_avg_size < 0.3 THEN 'Frequent Small Spender'
+            WHEN norm_diversity > 0.8 THEN 'Category Diversifier'
+            WHEN norm_spending < 0.2 AND norm_transactions < 0.2 THEN 'Minimal Spender'
+            ELSE 'Average Spender'
+        END as behavioral_segment,
+        -- Risk scoring
+        CASE 
+            WHEN spending_variability > avg_transaction_size * 2 THEN 'High Variance'
+            WHEN high_value_transactions > total_transactions * 0.5 THEN 'High Value Focus'
+            WHEN cash_usage > total_transactions * 0.3 THEN 'Cash Preferred'
+            ELSE 'Standard Pattern'
+        END as risk_profile
+    FROM normalized_features
+)
+SELECT 
+    employee_name,
+    department,
+    role,
+    behavioral_segment,
+    risk_profile,
+    total_transactions,
+    category_diversity,
+    ROUND(total_spending, 2) as total_spending,
+    ROUND(avg_transaction_size, 2) as avg_transaction_size,
+    high_value_transactions,
+    active_days,
+    ROUND(norm_spending, 3) as spending_score,
+    ROUND(norm_diversity, 3) as diversity_score,
+    -- Segment-specific recommendations
+    CASE 
+        WHEN behavioral_segment = 'High Volume Multi-Category' THEN 'Monitor for policy compliance'
+        WHEN behavioral_segment = 'High Value Transactor' THEN 'Require additional approval for large transactions'
+        WHEN behavioral_segment = 'Frequent Small Spender' THEN 'Consider corporate card with spending limits'
+        WHEN behavioral_segment = 'Minimal Spender' THEN 'Review if additional resources needed'
+        ELSE 'Standard monitoring'
+    END as recommendation
+FROM behavioral_segments
+ORDER BY total_spending DESC;
+
+-- 14. Q: Time series forecasting with seasonal adjustment
+WITH monthly_time_series AS (
+    SELECT 
+        dd.year,
+        dd.month,
+        SUM(fe.amount) as monthly_total,
+        ROW_NUMBER() OVER (ORDER BY dd.year, dd.month) as time_period
+    FROM fact_expenses fe
+    JOIN dim_date dd ON fe.date_id = dd.date_id
+    GROUP BY dd.year, dd.month
+    ORDER BY dd.year, dd.month
+),
+trend_analysis AS (
+    SELECT 
+        *,
+        AVG(monthly_total) OVER (ORDER BY time_period ROWS BETWEEN 11 PRECEDING AND CURRENT ROW) as twelve_month_ma,
+        LAG(monthly_total, 1) OVER (ORDER BY time_period) as prev_month,
+        LAG(monthly_total, 12) OVER (ORDER BY time_period) as same_month_last_year,
+        -- Linear trend calculation
+        time_period * 
+        (SUM(time_period * monthly_total) OVER () - 
+         COUNT(*) OVER () * AVG(time_period) OVER () * AVG(monthly_total) OVER ()) /
+        NULLIF((SUM(time_period * time_period) OVER () - 
+                COUNT(*) OVER () * AVG(time_period) OVER () * AVG(time_period) OVER ()), 0) +
+        (AVG(monthly_total) OVER () - 
+         AVG(time_period) OVER () * 
+         (SUM(time_period * monthly_total) OVER () - 
+          COUNT(*) OVER () * AVG(time_period) OVER () * AVG(monthly_total) OVER ()) /
+         NULLIF((SUM(time_period * time_period) OVER () - 
+                 COUNT(*) OVER () * AVG(time_period) OVER () * AVG(time_period) OVER ()), 0)) as trend_value
+    FROM monthly_time_series
+),
+seasonal_decomposition AS (
+    SELECT 
+        *,
+        monthly_total - COALESCE(twelve_month_ma, monthly_total) as seasonal_component,
+        ROUND(monthly_total - trend_value, 2) as residual,
+        -- Seasonal indices
+        ROUND(AVG(monthly_total - COALESCE(twelve_month_ma, monthly_total)) OVER (PARTITION BY month), 2) as seasonal_index
+    FROM trend_analysis
+),
+forecast_calculation AS (
+    SELECT 
+        *,
+        -- Simple forecast: trend + seasonal + damped residual
+        ROUND(trend_value + seasonal_index + (residual * 0.3), 2) as next_month_forecast,
+        CASE 
+            WHEN ABS(residual) > (STDDEV(residual) OVER () * 2) THEN 'Outlier Month'
+            WHEN seasonal_component > (AVG(ABS(seasonal_component)) OVER () * 2) THEN 'Strong Seasonal Effect'
+            ELSE 'Normal'
+        END as pattern_classification
+    FROM seasonal_decomposition
+)
+SELECT 
+    year,
+    month,
+    ROUND(monthly_total, 2) as actual,
+    ROUND(trend_value, 2) as trend,
+    ROUND(seasonal_index, 2) as seasonal_index,
+    ROUND(residual, 2) as residual,
+    next_month_forecast,
+    pattern_classification,
+    -- Forecast accuracy for historical data
+    CASE 
+        WHEN prev_month IS NOT NULL THEN
+            ROUND(ABS(monthly_total - (LAG(next_month_forecast, 1) OVER (ORDER BY time_period))) / monthly_total * 100, 2)
+        ELSE NULL
+    END as forecast_accuracy_pct
+FROM forecast_calculation
+ORDER BY year, month;
+
+
+
+-- 15. Q: Complex multi-level aggregation with ROLLUP and advanced analytics
+WITH hierarchical_analysis AS (
+    SELECT 
+        CASE 
+            WHEN GROUPING(dd.year) = 1 THEN 'ALL YEARS'
+            ELSE CAST(dd.year AS CHAR)
+        END as year_level,
+        CASE 
+            WHEN GROUPING(de.department) = 1 THEN 'ALL DEPARTMENTS'
+            ELSE de.department
+        END as department_level,
+        CASE 
+            WHEN GROUPING(dc.category_name) = 1 THEN 'ALL CATEGORIES'
+            ELSE dc.category_name
+        END as category_level,
+        COUNT(fe.expense_id) as transaction_count,
+        SUM(fe.amount) as total_amount,
+        AVG(fe.amount) as avg_amount,
+        MIN(fe.amount) as min_amount,
+        MAX(fe.amount) as max_amount,
+        -- Grouping indicators
+        GROUPING(dd.year) as year_grouping,
+        GROUPING(de.department) as dept_grouping,
+        GROUPING(dc.category_name) as cat_grouping
+    FROM fact_expenses fe
+    JOIN dim_date dd ON fe.date_id = dd.date_id
+    JOIN dim_employee de ON fe.employee_id = de.employee_id
+    JOIN dim_category dc ON fe.category_id = dc.category_id
+    WHERE dd.year IN (2023, 2024, 2025)
+    GROUP BY dd.year, de.department, dc.category_name WITH ROLLUP
+),
+percentage_analysis AS (
+    SELECT 
+        *,
+        -- Calculate percentages at each level
+        ROUND(total_amount * 100.0 / SUM(total_amount) OVER (
+            PARTITION BY 
+                CASE WHEN year_grouping = 0 THEN year_level END,
+                CASE WHEN dept_grouping = 0 THEN department_level END
+        ), 2) as pct_of_parent,
+        -- Rank within each group
+        RANK() OVER (
+            PARTITION BY year_grouping, dept_grouping, cat_grouping
+            ORDER BY total_amount DESC
+        ) as amount_rank,
+        -- Determine hierarchy level
+        CASE 
+            WHEN year_grouping = 1 AND dept_grouping = 1 AND cat_grouping = 1 THEN 'GRAND TOTAL'
+            WHEN year_grouping = 0 AND dept_grouping = 1 AND cat_grouping = 1 THEN 'YEAR TOTAL'
+            WHEN year_grouping = 0 AND dept_grouping = 0 AND cat_grouping = 1 THEN 'DEPARTMENT TOTAL'
+            ELSE 'DETAIL'
+        END as hierarchy_level
+    FROM hierarchical_analysis
+)
+SELECT 
+    hierarchy_level,
+    year_level,
+    department_level,
+    category_level,
+    transaction_count,
+    ROUND(total_amount, 2) as total_amount,
+    ROUND(avg_amount, 2) as avg_amount,
+    pct_of_parent,
+    amount_rank,
+    -- Add variance analysis
+    CASE 
+        WHEN hierarchy_level = 'DETAIL' AND 
+             total_amount > (SELECT AVG(total_amount) FROM percentage_analysis WHERE hierarchy_level = 'DETAIL') * 1.5
+        THEN 'Above Average'
+        WHEN hierarchy_level = 'DETAIL' AND 
+             total_amount < (SELECT AVG(total_amount) FROM percentage_analysis WHERE hierarchy_level = 'DETAIL') * 0.5
+        THEN 'Below Average'
+        ELSE 'Average'
+    END as performance_indicator
+FROM percentage_analysis
+ORDER BY 
+    FIELD(hierarchy_level, 'GRAND TOTAL', 'YEAR TOTAL', 'DEPARTMENT TOTAL', 'DETAIL'),
+    year_level,
+    department_level,
+    total_amount DESC;

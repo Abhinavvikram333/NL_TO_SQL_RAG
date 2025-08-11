@@ -1,0 +1,147 @@
+CAMPERVAN BUSINESS DATABASE - BUSINESS RULES FOR NATURAL LANGUAGE TO SQL GENERATION
+
+=== CORE BUSINESS RULES ===
+
+1. FISCAL YEAR CONFIGURATION:
+   - Fiscal year starts in April and ends in March
+   - Fiscal Year SQL: CASE WHEN MONTH(date_id) >= 4 THEN YEAR(date_id) ELSE YEAR(date_id) - 1 END
+   - Fiscal Quarters: April-June=FQ1, July-Sep=FQ2, Oct-Dec=FQ3, Jan-Mar=FQ4
+   - When user says "this year" = calendar year, "this fiscal year" = April-March fiscal year
+
+2. DATA STANDARDIZATION:
+   - All department names in English: 'OPERATIONS', 'Finance', 'Sale & Marketing', 'HR', 'IT & System'
+   - Payment methods: 'Credit Card', 'Bank Transfer', 'Cash', 'UPI' only
+   - Expense categories are standardized with no typos
+   - No duplicate employee records (unique employee_id)
+   - Currency: All amounts in Indian Rupees (₹)
+   - Date format: YYYY-MM-DD for date_id column
+
+3. HIERARCHICAL DATA RULES:
+   - Sub-categories are NOT unique across categories
+   - Always join category_name with sub_category_name for filtering
+   - Example: Both 'Travel' and 'Operations' categories may have 'Hotel' sub-category
+   - WRONG: WHERE sub_category_name = 'Travel'
+   - CORRECT: WHERE category_name = 'Business' AND sub_category_name = 'Travel'
+
+=== ADVANCED BUSINESS LOGIC ===
+
+4. AMOUNT THRESHOLDS:
+   - High-value transactions: > ₹50,000 (require special attention)
+   - Petty cash transactions: < ₹1,000 (typically cash payments)
+   - Credit card range: ₹5,000 - ₹25,000 typically
+   - Bank transfers: Usually > ₹10,000 for major purchases
+   - Vehicle purchases: ₹35,000 - ₹65,000 range
+   - Insurance payments: ₹1,500 - ₹2,500 typically
+
+5. DEPARTMENT EXPENSE PATTERNS:
+   - OPERATIONS: High vehicle-related expenses (purchase, conversion, maintenance)
+   - Finance: Professional services, accounting, permits & licenses
+   - Sale & Marketing: Advertising, client meals, business travel
+   - HR: Training, recruitment, employee development
+   - IT & System: Equipment, software, office supplies
+
+6. SEASONAL BUSINESS PATTERNS:
+   - Peak Season: April-June (higher conversion activity)
+   - Festival Season: October-December (bonus expenses, celebrations)
+   - Year-end: March (budget utilization, equipment purchases)
+   - New Fiscal Year: April (fresh budgets, new initiatives)
+
+7. TIME-BASED BUSINESS LOGIC:
+   - Working days: Monday to Saturday (Indian standard)
+   - Monthly cycles: Salary processing affects expense timing
+   - Quarterly reviews: End of fiscal quarters need special attention
+   - Use YEAR(), MONTH(), MONTHNAME() functions for date operations
+
+8. CATEGORY-SPECIFIC BUSINESS RULES:
+   - Vehicle Purchase: High amounts, infrequent, mostly bank transfers
+   - Vehicle Conversion: Project-based, multiple transactions per vehicle
+   - Vehicle Maintenance: Regular monthly, predictable amounts
+   - Insurance: Annual/semi-annual, fixed amounts
+   - Marketing: Campaign-based, seasonal variations
+   - Professional Services: Quarterly, compliance-driven
+   - Parts & Equipment: Variable, project-dependent
+   - Tools: One-time purchases, lower frequency
+   - Raw Materials: Project-based, bulk purchases
+
+=== NATURAL LANGUAGE MAPPINGS ===
+
+9. COMMON QUERY PATTERNS:
+   - "Who spent the most?" → GROUP BY employee_name ORDER BY SUM(amount) DESC
+   - "What category costs most?" → GROUP BY category_name ORDER BY SUM(amount) DESC
+   - "Monthly trends" → GROUP BY YEAR(date_id), MONTH(date_id)
+   - "Department comparison" → GROUP BY department
+   - "Above average" → WHERE amount > (SELECT AVG(amount) FROM fact_expenses)
+   - "This fiscal year" → WHERE fiscal_year = current_fiscal_year
+   - "Last quarter" → WHERE quarter = previous_quarter
+   - "High-value transactions" → WHERE amount > 50000
+
+10. AGGREGATION GUIDELINES:
+    - Department analysis: JOIN dim_employee for department info
+    - Category analysis: JOIN dim_category for category info
+    - Time analysis: JOIN dim_date for date dimensions
+    - Employee analysis: Include department and role context
+    - Always use proper JOINs, never assume direct relationships
+
+=== QUERY OPTIMIZATION RULES ===
+
+11. PERFORMANCE GUIDELINES:
+    - Always use indexed columns: employee_id, category_id, date_id
+    - Date filtering: Use BETWEEN for ranges: date_id BETWEEN '2024-01-01' AND '2024-12-31'
+    - Department filtering: Use exact string matching with proper case
+    - Amount calculations: Maintain DECIMAL precision
+    - Use LIMIT for top N queries to improve performance
+
+12. DATA VALIDATION:
+    - Validate date_id exists in dim_date table
+    - Validate employee_id exists in dim_employee table
+    - Validate category_id exists in dim_category table
+    - No negative amounts allowed (business rule)
+    - Payment methods must be from approved list only
+
+=== ERROR PREVENTION ===
+
+13. COMMON PITFALLS TO AVOID:
+    - Don't query sub_category_name without category_name context
+    - Don't assume calendar year when fiscal year intended
+    - Don't use direct string matching for fuzzy concepts
+    - Always consider NULL values in aggregations
+    - Don't forget to handle edge cases (weekends, holidays)
+
+14. SECURITY & PRIVACY:
+    - No salary information stored in this database
+    - Only work-related employee information available
+    - All transactions logged with employee and date for audit
+    - Approval workflows implied by transaction amounts
+
+=== BUSINESS INTELLIGENCE CONTEXT ===
+
+15. ANALYSIS PATTERNS:
+    - Budget planning: Use historical data for forecasting
+    - Variance analysis: Compare actual vs expected patterns
+    - Trend analysis: Month-over-month, year-over-year comparisons
+    - Efficiency metrics: Cost per employee, category optimization
+    - Risk indicators: Unusual spending patterns, anomaly detection
+    - Seasonal adjustments: Account for business cycles in analysis
+
+16. REPORTING STANDARDS:
+    - Format amounts: FORMAT(amount, 2) for display
+    - Show percentages: Calculate proportions for context
+    - Include transaction counts with amount totals
+    - Provide time context (fiscal vs calendar periods)
+    - Show department and category breakdowns
+    - Include employee context for accountability
+
+=== TABLE RELATIONSHIPS ===
+
+17. SCHEMA STRUCTURE:
+    - fact_expenses: Central fact table with employee_id, category_id, date_id FKs
+    - dim_employee: Employee master with department, role, hire_date
+    - dim_category: Category master with category_name, sub_category_name
+    - dim_date: Date dimension with year, month, quarter, fiscal_year
+    - All relationships are enforced via foreign keys
+
+18. JOIN PATTERNS:
+    - Employee context: fact_expenses JOIN dim_employee ON employee_id
+    - Category context: fact_expenses JOIN dim_category ON category_id  
+    - Time context: fact_expenses JOIN dim_date ON date_id
+    - Full context: Join all dimension tables for complete analysis

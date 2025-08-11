@@ -1,0 +1,49 @@
+Database: campervan
+Tables:
+1. dim_date
+   - date_id (PK): DATE - Unique date identifier in YYYY-MM-DD format
+   - day: INT - Day of month (1-31)
+   - month: INT - Month number (1-12)
+   - month_name: VARCHAR(15) - Full month name (January, February, etc.)
+   - quarter: VARCHAR(5) - Calendar quarter (Q1, Q2, Q3, Q4)
+   - fiscal_quarter: VARCHAR(5) - Fiscal quarter (FQ1, FQ2, FQ3, FQ4) - April start
+   - year: INT - Calendar year (2023, 2024, 2025)
+   - fiscal_year: INT - Fiscal year (April to March cycle)
+
+2. dim_category
+   - category_id (PK): INT AUTO_INCREMENT - Unique category identifier
+   - category_name: VARCHAR(50) - Main expense categories: Vehicle Purchase, Vehicle Conversion, Vehicle Maintenance, Parts & Equipment, Tools, Raw Materials, Insurance, Facility, Fuel & Operating, Marketing, Professional Services, Office Supplies, Travel, Meals, Training, Permits & Licenses
+   - sub_category_name: VARCHAR(50) - Sub-categories: Van Acquisition, Registration, Interior Build, Electrical System, Plumbing, Service & Repairs, Conversion Parts, Appliances, Workshop Tools, Wood & Metal, Vehicle Insurance, Workshop Rent, Fuel & Transport, Advertising, Legal & Accounting, Business Supplies, Business Travel, Client Meals, Skills Development, Business Compliance
+
+3. dim_employee
+   - employee_id (PK): INT - Unique employee identifier
+   - employee_name: VARCHAR(100) - Full employee name
+   - department: VARCHAR(50) - Department names: OPERATIONS, Sale & Marketing, Finance, HR, IT & System
+   - role: VARCHAR(50) - Job roles: Logistic Coordinator, Supply Chain Analyst, Quality Control Analyst, Operation Manager, Digital Marketing Specialist, Sales Executive, Marketing Manager, Accountant, Talent Acquisition Specialist, Payroll Specialist, HR Manager, HR Junior, Software Developer, IT Manager, System Administrator, IT Support Specialist, Network Engineer, Inventory Specialist, Production Supervisor, Warehouse Manager, Sales Manager, Content Marketing Specialist, Business Development Executive, Financial Analyst, Finance Manager, Training Coordinator, Recruitment Specialist, Database Administrator, Web Developer, DevOps Engineer
+   - hire_date: DATE - Employee hiring date
+
+4. fact_expenses
+   - expense_id (PK): INT AUTO_INCREMENT - Unique expense transaction identifier
+   - employee_id (FK): INT → dim_employee.employee_id - Links to employee who made expense
+   - category_id (FK): INT → dim_category.category_id - Links to expense category
+   - date_id (FK): DATE → dim_date.date_id - Links to transaction date
+   - amount: DECIMAL(10,2) - Expense amount in Indian Rupees (₹)
+   - payment_method: VARCHAR(50) - Payment methods: Credit Card, Bank Transfer, Cash, UPI
+
+Relationships:
+- fact_expenses.employee_id → dim_employee.employee_id (Many-to-One)
+- fact_expenses.category_id → dim_category.category_id (Many-to-One) 
+- fact_expenses.date_id → dim_date.date_id (Many-to-One)
+- Star schema design with fact_expenses as central fact table
+- All dimension tables connect to fact table via foreign keys
+- Supports drill-down analysis by employee, category, and time dimensions
+
+Business Context:
+- Campervan manufacturing and conversion business
+- Tracks employee expenses across vehicle purchase, conversion, maintenance, and operations
+- Fiscal year: April to March (Indian business standard)
+- Currency: Indian Rupees (₹)
+- Date range: January 2023 to August 2025
+- 30 employees across 5 departments
+- 20 expense categories covering complete campervan business operations
+- 2,400+ expense transactions for comprehensive analysis
